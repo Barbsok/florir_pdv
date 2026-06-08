@@ -1,0 +1,6 @@
+{
+  "name": "Flora PDV",
+  "description": "Sistema de PDV e controle de estoque de alto padrão para a floricultura Florir.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
