@@ -3,6 +3,7 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { isDatabaseConfigured } from './db';
 import { dbCheck } from './middlewares/dbCheck';
+import { initBackupSchedule } from './services/backupService';
 import authRoutes from './routes/authRoutes';
 import bootstrapRoutes from './routes/bootstrapRoutes';
 import productRoutes from './routes/productRoutes';
@@ -28,6 +29,7 @@ export async function init() {
     console.warn('WARNING: DATABASE_URL is not set. All /api requests will return 503.');
   } else {
     console.log('PostgreSQL database configured successfully!');
+    initBackupSchedule();
   }
 
   if (process.env.NODE_ENV !== 'production') {
