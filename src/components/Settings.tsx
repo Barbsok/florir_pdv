@@ -474,7 +474,7 @@ export default function Settings({ currentLanguage, onLanguageChange, user }: Se
                     <thead>
                       <tr className="border-b border-brand-border/40 text-[10px] uppercase text-brand-muted-foreground tracking-wider font-semibold">
                         <th className="py-3 px-2">ID</th>
-                        <th className="py-3 px-2">Funcógrafo</th>
+                        <th className="py-3 px-2">Funcionário</th>
                         <th className="py-3 px-2">Cargo</th>
                         <th className="py-3 px-2 text-right">Status</th>
                       </tr>

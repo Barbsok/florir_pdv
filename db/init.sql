@@ -1,4 +1,4 @@
--- Flora PDV - Database Schema
+-- Florir PDV - Database Schema
 -- Auto-executed by Docker Postgres on first run
 
 -- 1. Funcionarios
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS produtos (
     idcategoria   INTEGER       NOT NULL REFERENCES categorias(idcategoria)
 );
 
--- 5. Pedidos (idcliente nullable — sales without a customer are allowed)
+-- 5. Pedidos (idcliente pode ser nulo — vendas sem um cliente são permitidas)
 CREATE TABLE IF NOT EXISTS pedidos (
     idpedido       SERIAL        PRIMARY KEY,
     datahora       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -74,8 +74,8 @@ CREATE TABLE IF NOT EXISTS entradaestoque (
 
 ---------------------------------------------------------------------------
 -- TRIGGER
--- Fires after each row inserted into itenspedido.
--- Rolls back the insert if the product stock has gone negative.
+-- Dispara após cada linha inserida emitenspedido.
+-- Reverte a inserção se o estoque ficar negativo.
 ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION trg_verificar_estoque_func()
 RETURNS TRIGGER AS $$
@@ -97,8 +97,8 @@ FOR EACH ROW EXECUTE FUNCTION trg_verificar_estoque_func();
 
 ---------------------------------------------------------------------------
 -- PROCEDURE
--- Finalizes an order: updates status, payment method and decrements stock.
--- On any error the exception propagates and the caller's transaction rolls back.
+-- Finaliza um pedido: atualiza status e forma de pagamento, e reduz o estoque dos produtos.
+-- Em caso de erro (ex: estoque negativo), a transação é revertida e o pedido permanece aberto.
 ---------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE sp_finalizar_pedido(
     p_idpedido       INT,
@@ -126,7 +126,7 @@ $$;
 
 ---------------------------------------------------------------------------
 -- VIEW
--- Full sales summary joining all relevant tables.
+-- Resumo completo de cada venda, incluindo dados do pedido, cliente, vendedor e itens.
 ---------------------------------------------------------------------------
 CREATE OR REPLACE VIEW vw_resumo_vendas AS
 SELECT
@@ -154,8 +154,8 @@ LEFT  JOIN categorias c   ON pr.idcategoria  = c.idcategoria;
 
 ---------------------------------------------------------------------------
 -- FUNCTION
--- Returns products whose current stock is below the minimum threshold.
--- Used by the dashboard to show replenishment alerts.
+-- Retorna produtos com estoque abaixo do mínimo, incluindo a quantidade faltante para reposição.
+-- Utilizada para alertar o administrador sobre itens que precisam ser reabastecidos.
 ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_produtos_estoque_baixo()
 RETURNS TABLE (
@@ -182,13 +182,13 @@ AS $$
 $$;
 
 ---------------------------------------------------------------------------
--- SEED DATA
+-- INSERCAO DE DADOS
 ---------------------------------------------------------------------------
 
--- Funcionarios (app admins at ids 11-12 to preserve test.sql FK references)
+-- Funcionarios (Adicionar administradores do aplicativo nos IDs 11 e 12 para preservar as referências de Chave Estrangeira (FK) do arquivo test.sql)
 INSERT INTO funcionarios (idfuncionario, nome, email, senha, cargo, ativo) VALUES
     (1,  'Administrador',   'florirtanabi@gmail.com', 'adm2026',     'administrador', true),
-    (2,  'Ana Silva',       'ana@florir.com',          'vendedor123', 'vendedor',      true),
+    (2,  'Barbara Okasaki', 'barbara@florir.com',      'vendedor123', 'vendedor',      true),
     (3,  'Bruno Costa',     'bruno@florir.com',        'vendedor123', 'vendedor',      true),
     (4,  'Carla Mendes',    'carla@florir.com',        'caixa123',    'caixa',         true),
     (5,  'Diego Lima',      'diego@florir.com',        'vendedor123', 'vendedor',      true),
@@ -199,7 +199,7 @@ INSERT INTO funcionarios (idfuncionario, nome, email, senha, cargo, ativo) VALUE
     (10, 'Igor Pinto',      'igor@florir.com',         'vendedor123', 'vendedor',      true),
     (11, 'Efraim',          'efraimwss@gmail.com',     'admin123',    'administrador', true),
     (12, 'Super Admin',     'admin@gmail.com',         'admin123',    'administrador', true)
-ON CONFLICT (idfuncionario) DO NOTHING;
+ON CONFLICT (idfuncionario) DO NOTHING; -- Se tentar inserir um valor de idfuncionario já existente, ignora a inserção (útil para re-execução do script sem erros)
 
 -- Categorias
 INSERT INTO categorias (idcategoria, nome, descricao) VALUES
@@ -257,6 +257,22 @@ INSERT INTO itenspedido (idpedido, idproduto, quantidade, valorunitario, subtota
     (10, 4,   1, 85.00,  85.00)
 ON CONFLICT (idpedido, idproduto) DO NOTHING;
 
+
+-- Clientes
+INSERT INTO clientes (nome, cpf, email, telefone, ativo, datacriacao) VALUES
+('Luciene Cavalcanti', '334.454.235-23', 'luciene.cavalcanti@gmail.com', '(17) 91929-0021', true, NOW()),
+('Beatriz Oliveira', '234.567.890-12', 'beatriz.oliveira@gmail.com', '(17) 99123-4567', true, NOW()),
+('Carlos Eduardo Santos', '345.678.901-23', 'carlos.eduardo@gmail.com', '(11) 97654-3210', true, NOW()),
+('Daniela Rodrigues', '456.789.012-34', 'daniela.rodri@gmail.com', '(17) 98111-2233', true, NOW()),
+('Eduardo Ferreira', '567.890.123-45', 'edu.ferreira@gmail.com', '(11) 96543-2109', true, NOW()),
+('Fernanda Costa', '678.990.123-56', 'fernanda.costa@gmail.com', '(17) 99222-3344', true, NOW()),
+('Gabriel Almeida', '789.012.345-67', 'gabriel.almeida@gmail.com', '(11) 95432-1098', true, NOW()),
+('Heloísa Souza', '890.123.456-78', 'heloisa.souza@gmail.com', '(17) 98333-4455', true, NOW()),
+('Igor Martins', '901.234.567-89', 'igor.martins@gmail.com', '(11) 94321-0987', true, NOW()),
+('Juliana Mendes', '012.345.678-90', 'juliana.mendes@gmail.com', '(17) 99444-5566', true, NOW());
+ON CONFLICT (cpf) DO NOTHING;
+
+
 -- EntradaEstoque
 INSERT INTO entradaestoque (quantidade, precocusto, datahora, observacao, idproduto, idfuncionario) VALUES
     (50, 2.50,  '2026-04-28 08:00:00+00', 'Reposição semanal', 1,  1),
@@ -271,7 +287,7 @@ INSERT INTO entradaestoque (quantidade, precocusto, datahora, observacao, idprod
     (10, 80.00, '2026-05-02 09:30:00+00', NULL,                10, 1)
 ON CONFLICT DO NOTHING;
 
--- Reset sequences after forced-ID inserts
+-- Resetar as sequências para os próximos inserts 
 SELECT setval('funcionarios_idfuncionario_seq', (SELECT MAX(idfuncionario) FROM funcionarios));
 SELECT setval('categorias_idcategoria_seq',     (SELECT MAX(idcategoria)   FROM categorias));
 SELECT setval('produtos_idproduto_seq',         (SELECT MAX(idproduto)     FROM produtos));
